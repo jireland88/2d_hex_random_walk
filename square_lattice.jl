@@ -131,11 +131,11 @@ function squared_error(state_prob_1, state_prob_2)
     return sqrt(sum/size(state_prob_1, 1))
 end
 
-states = simulate([0,0], 20, 1, 1, 5, 100000)
-state_prob = get_probabilities(states, 5, 100000)
+states = simulate([0,0], 10, 1, 1, 5, 1000000)
+state_prob = get_probabilities(states, 5, 1000000)
 plot_probabilities(state_prob)
 
-states = master_equation_squ_all(20, 11, 6, 6)
+states = master_equation_squ_all(10, 11, 6, 6)
 plot_probabilities(states)
 
 println(squared_error(state_prob, states))
