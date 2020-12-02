@@ -1,5 +1,5 @@
 using StatsBase
-using Plotly
+using Plots
 
 function simulate_walk(start_state, t, q_1, q_2, boundary)
     old_state = start_state
@@ -46,16 +46,20 @@ function simulate_walk(start_state, t, q_1, q_2, boundary)
     return old_state
 end
 
-function simulate(start_state, t, q_1, q_2, boundary, N)
+function simulate(start_state, t, q_1, q_2, N, trials)
+    boundary = (N / 2) - 1
+
     states = [start_state]
-    for i in 1:N
+    for i in 1:trials
         s = simulate_walk(start_state, t, q_1, q_2, boundary)
         states = append!(states, [s])
     end
     return states
 end
 
-function get_probabilities(states, boundary, N)
+function get_probabilities(states, N, trials)
+    boundary = (N / 2) - 1
+
     state_probs = []
     for i in -boundary:boundary
         for j in -boundary:boundary
@@ -67,13 +71,13 @@ function get_probabilities(states, boundary, N)
                 end
             end
 
-            state_probs = append!(state_probs, [[i, j, count/N]])
+            state_probs = append!(state_probs, [[i + boundary + 1, j + boundary + 1, count/trials]])
         end
     end
     return state_probs
 end
 
-function master_equation_squ(n1, n2, t, N1, N2, n01, n02, q1, q2)
+function master_equation(n1, n2, t, N1, N2, n01, n02, q1, q2)
     tot = 0
 
     for k1 in 0:(N1-1)
@@ -94,29 +98,28 @@ function master_equation_squ(n1, n2, t, N1, N2, n01, n02, q1, q2)
     return tot / (N1*N2)
 end
 
-function master_equation_squ_all(t, N, n01, n02)
+function master_equation_all(t, N, n01, n02)
     states = []
     for i in 1:N
         for j in 1:N
-            states = append!(states, [[i, j, master_equation_squ(i, j, t, N, N, n01, n02, 1, 1)]])
+            states = append!(states, [[i, j, master_equation(i, j, t, N, N, n01, n02, 1, 1)]])
         end
     end
     return states
 end
 
-function plot_probabilities(states)
-    x = []
-    y = []
-    z = []
+function plot_heatmap(states)
+    N = Int(sqrt(length(states)))
+
+    M = zeros(N, N)
 
     for i in states
-        x = append!(x, [i[1]])
-        y = append!(y, [i[2]])
-        z = append!(z, [i[3]])
+        M[Int(i[2]), Int(i[1])] = i[3]
     end
 
-    response = plot(heatmap(x=x, y=y, z=z, aspect_ratio = 1))
-    return response
+    plotly()
+    p = heatmap(M)
+    gui(p)
 end
 
 function squared_error(state_prob_1, state_prob_2)
@@ -131,11 +134,11 @@ function squared_error(state_prob_1, state_prob_2)
     return sqrt(sum/size(state_prob_1, 1))
 end
 
-states = simulate([0,0], 10, 1, 1, 5, 1000000)
-state_prob = get_probabilities(states, 5, 1000000)
-plot_probabilities(state_prob)
+states = simulate([0,0], 10, 1, 1, 12, 1000000)
+state_prob = get_probabilities(states, 12, 1000000)
+plot_heatmap(state_prob)
 
-states = master_equation_squ_all(10, 11, 6, 6)
-plot_probabilities(states)
+states = master_equation_all(10, 12, 6, 6)
+plot_heatmap(states)
 
 println(squared_error(state_prob, states))
